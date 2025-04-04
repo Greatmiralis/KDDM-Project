@@ -1,0 +1,1 @@
+# evaluation functions, checks if our model is correct

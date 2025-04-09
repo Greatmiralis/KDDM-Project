@@ -8,3 +8,10 @@
 # 4. Evaluate
 # 5. Use Method and visualization to complete Task 2 and 3
 ####################
+
+from Dataloader import load_characters
+
+if __name__ == "__main__":
+    # load data
+    heroes, villains = load_characters("Data-20250331/data.csv")
+

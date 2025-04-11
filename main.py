@@ -14,7 +14,3 @@ from Dataloader import load_characters
 if __name__ == "__main__":
     # load data
     heroes, villains = load_characters("Data-20250331/data.csv")
-    hero = heroes[4]
-    print(heroes[4].name)
-    print(heroes[4].has_blank)
-

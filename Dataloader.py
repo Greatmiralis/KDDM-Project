@@ -10,7 +10,7 @@ class Character:
     def __init__(self, name, role, skin_type, power_level, weight, height, age,
                  eye_color, gender, hair_color, speed, universe, body_type,
                  job, battle_iq, species, ranking, intelligence, abilities,
-                 training_time, special_attack, secret_code, win_prob):
+                 training_time, special_attack, secret_code, win_prob, has_blank):
         self.name = name
         self.role = role
         self.skin_type = skin_type
@@ -34,6 +34,19 @@ class Character:
         self.special_attack = special_attack
         self.secret_code = secret_code
         self.win_prob = win_prob
+        self.has_blank = has_blank
+
+def setBlanksToNegOne(row):
+    # replace NaN and blank with -1 
+    with pd.option_context("future.no_silent_downcasting", True):
+        row = row.fillna(-1).infer_objects(copy=False)
+    row = row.replace('nan', -1)
+    row['has_blank'] = False
+    if -1 in row.values:
+        row['has_blank'] = True
+        
+    return row
+
 
 def load_characters(filepath):
     df = pd.read_csv(filepath)
@@ -42,6 +55,8 @@ def load_characters(filepath):
     villains = []
 
     for index, row in df.iterrows():
+        row = setBlanksToNegOne(row)
+
         data = row.to_dict()
 
         clean_data = clean_features(data)
@@ -60,10 +75,26 @@ def load_characters(filepath):
 
 def clean_features(data):
     data['role'] = clean_role_feature(data.get('role'))
+    data['name'] = str(data.get('name', '')).strip()
 
-    # Todo: clean other features
+    # Convert numerics safely
+    numeric_fields = ['power_level', 'weight', 'height', 'age', 'battle_iq',
+                      'ranking', 'intelligence', 'training_time', 'win_prob', 'speed']
+    for field in numeric_fields:
+        data[field] = safe_float(data.get(field))
+
+    # Clean other fields
+    for field in ['eye_color', 'gender', 'hair_color', 'universe', 'body_type',
+                  'job', 'species', 'abilities', 'special_attack', 'secret_code']:
+        data[field] = str(data.get(field, '')).strip()
 
     return data
+
+def safe_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 def clean_role_feature(value):
     if isinstance(value, str):

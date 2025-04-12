@@ -4,6 +4,7 @@
 # the evaluation data must not be the same as the training data ie. 80% of rows is training, 20% is eval
 # evaluation should be free from holes or blank spaces possibly
 
+import random
 import pandas as pd
 
 class Character:
@@ -105,6 +106,12 @@ def clean_role_feature(value):
             return 'Villain'
     return None
 
-
-
-
+# splits the dataset into a eval and a train set
+def split_eval(character_list, amount = 100):
+    # filters every char which has a blank
+    acceptable_eval = [ c for c in character_list if c.has_blank == False]
+    
+    # makes a random sample of size amount
+    eval_list = random.sample(acceptable_eval, min(amount, acceptable_eval.__len__()))
+    character_list = [c for c in character_list if c not in eval_list]
+    return eval_list, character_list

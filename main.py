@@ -1,21 +1,81 @@
-####################
-#   Order of operations  
-# 1. Load Data, loads the csv file into 2 seperate list for heroes and villains
-# 1.0.1 Split Data into Evaluation and training Data
-# 1.1 Preprocess loaded Data, processes the data of these list.
-# 2. Visualize Data, visualizes the processed data
-# 3. Build prediction Method, predict the winning probabilites
-# 4. Evaluate
-# 5. Use Method and visualization to complete Task 2 and 3
-####################
-
+import pandas as pd
+from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.linear_model import LinearRegression
+from Preprocess import preprocessor, target_transform, CorrelationFilter, categorical_features, role_feature, numerical_features
 from Dataloader import load_characters, split_eval
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+
+model = Pipeline( steps=[
+    ("preprocessor", preprocessor), # preprocessing
+    #("corr_filter", CorrelationFilter(threshold = 0.9)), # filter all columns with correlation over threshold
+    ('regressor', RandomForestRegressor(n_estimators=100, random_state=33))
+    ]    
+)
+
+def outputTransformedDFs(x, y, y_transformed):
+    
+    x_transformed = preprocessor.fit_transform(x)
+    cat_pipe = preprocessor.named_transformers_["cat"]
+    onehot_encoder = cat_pipe.named_steps["encoder"]
+    onehot_feature_names = onehot_encoder.get_feature_names_out(categorical_features)
+    
+    role_pipe = preprocessor.named_transformers_["role"]
+    role_encode = role_pipe.named_steps["encoder"]
+    role_feat_names = role_encode.get_feature_names_out(role_feature)
+    
+    feature_names_num = numerical_features  # numeric features keep their names
+
+    all_feature_names = list(feature_names_num) + list(onehot_feature_names) + list(role_feat_names)
+    
+    x_df = pd.DataFrame(x_transformed, columns=all_feature_names)
+    
+    y_df = pd.DataFrame(y_transformed, index=y.index, columns=y.columns if hasattr(y, 'columns') else ['win_prob'])
+    df_combined = pd.concat([x_df, y_df], axis=1)   # add both togheter
+    df_combined.to_csv("transformed_data", index=False)
+    
+
+def compareArrays(arr1, arr2):
+    
+    arr2 = arr2.to_numpy().flatten()
+    mask = arr2 <= 1
+    
+    arr1_filtered = arr1[mask]
+    arr2_filtered = arr2[mask]
+    
+    max_diff = np.max(np.abs(arr1_filtered - arr2_filtered))
+    mean_diff = np.mean(np.abs(arr1_filtered - arr2_filtered))
+    print("Max Diff:" + str(max_diff))
+    print("Mean Diff:" + str(mean_diff))
+
+    plt.scatter(arr1_filtered, arr2_filtered)
+    plt.xlabel('Predictions')
+    plt.ylabel('Labels')
+    plt.title('Scatter plot of arrays')
+    plt.show()
 
 if __name__ == "__main__":
-    # load data
-    heroes, villains = load_characters("Data-20250331/data.csv")
-    eval_heroes, heroes = split_eval(heroes)
-    eval_villains, villains = split_eval(villains)
+    df = pd.read_csv("Data-20250331/data.csv")
+    
+    x = df.drop("win_prob", axis=1)
+    y = df[["win_prob"]]
+        
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=33)
+
+    y_transformed = target_transform.fit_transform(y_train)
+    outputTransformedDFs(X_train, y_train, y_transformed)
+    
+    
+    # for x transform. height/weight is bimodal so an interaction term might be usefull to improve prediction
+    # df['height_x_is_giant'] = df['height'] * (df['species'] == 'Giant').astype(int)
+
+    model.fit(X_train, y_transformed.ravel())
+    pred = model.predict(X_train)
+    compareArrays(pred, y_train)
+
+    
  
 
 # next steps

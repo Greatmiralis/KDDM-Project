@@ -37,13 +37,23 @@ def filter_characters(character_list, feat):
             
     return filtered_list
 
-def visualize_dependancy(character_list, feat1, feat2):
+def visualize_dependancy(character_list, feat1, feat2, group_feat="species"):
     character_list = filter_characters(character_list, feat1)
     character_list = filter_characters(character_list, feat2)
     x_axis = [getattr(x, feat1) for x in character_list]
     y_axis = [getattr(y, feat2) for y in character_list]
     
-    plt.scatter(x_axis, y_axis)
+    groups = list(set(getattr(char, group_feat) for char in character_list))
+    colors = plt.cm.get_cmap("tab10", len(groups))  # or 'Set1', 'Pastel1', etc.
+    group_to_color = {cat: colors(i) for i, cat in enumerate(groups)}
+    
+    colors = [group_to_color[getattr(char, group_feat)] for char in character_list]
+
+    for cat, color in group_to_color.items():
+        plt.scatter(x_axis, y_axis, c=[color], label=cat)
+        
+    plt.legend(title=group_feat)
+    plt.colorbar(label=group_feat)
     plt.xlabel(feat1)
     plt.ylabel(feat2)
     plt.title("Dependancy plot")

@@ -7,11 +7,12 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error
 
 model = Pipeline( steps=[
     ("preprocessor", preprocessor), # preprocessing
     #("corr_filter", CorrelationFilter(threshold = 0.9)), # filter all columns with correlation over threshold
-    ('regressor', RandomForestRegressor(n_estimators=100, random_state=33))
+    ('regressor', LinearRegression())
     ]    
 )
 
@@ -58,9 +59,10 @@ def compareArrays(arr1, arr2):
 
 if __name__ == "__main__":
     df = pd.read_csv("Data-20250331/data.csv")
+    df_filtered = df[df["win_prob"] <= 1].copy()
     
-    x = df.drop("win_prob", axis=1)
-    y = df[["win_prob"]]
+    x = df_filtered.drop("win_prob", axis=1)
+    y = df_filtered[["win_prob"]]
         
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=33)
 
@@ -72,11 +74,17 @@ if __name__ == "__main__":
     # df['height_x_is_giant'] = df['height'] * (df['species'] == 'Giant').astype(int)
 
     model.fit(X_train, y_transformed.ravel())
-    pred = model.predict(X_train)
-    compareArrays(pred, y_train)
-
+    pred = model.predict(X_test)
+    compareArrays(pred, y_test)
     
- 
-
-# next steps
-# check if plots show categories in categories like intelligence. i.e stupid, smart, genius usw
+    r2 = r2_score(y_test, pred)
+    print("R²:", r2)
+    
+    rmse = np.sqrt(mean_squared_error(y_test, pred))
+    print("RMSE:", rmse)
+    
+    pred_df = pd.DataFrame(pred)
+    df_combined = pd.concat([y_test.reset_index(drop=True), pred_df.reset_index(drop=True)], axis=1)
+    df_combined.columns = ["Target values", "Prediction"]
+    df_combined.to_csv("Target_and_predictions", index=False)
+    

@@ -47,8 +47,7 @@ class OutlierRemoval(BaseEstimator, TransformerMixin):  # IQR based, removes out
 
 def win_probOutlierRemoval(X):
     df = pd.DataFrame(X).copy()
-    for col in target_feature:
-        df[col] = df[col].clip(lower=0, upper=1)
+    df[df > 1] = df[df > 1] * 0.1   # multiplies the outlier with 0.1 as this makes some sense with the comman just being wrong there
     return df
 
 def clean_role_feature(value):

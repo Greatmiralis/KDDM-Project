@@ -7,8 +7,9 @@
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, FunctionTransformer, RobustScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, FunctionTransformer, RobustScaler, PolynomialFeatures
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
 import pandas as pd
 
 class CorrelationFilter(BaseEstimator, TransformerMixin):
@@ -80,7 +81,8 @@ target_transform = Pipeline(steps=[     # minimum change in medians and quartals
 numeric_transform = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="mean")),
     #("outlier removal", OutlierRemoval()) needs to be checked if too transforming
-    ("scalar", RobustScaler())
+    ("scalar", RobustScaler()),
+    ("poly", PolynomialFeatures(degree=2, include_bias=False))
     ]
 )
 

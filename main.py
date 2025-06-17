@@ -20,7 +20,6 @@ model = Pipeline( steps=[
 )
     
 def compareArrays(arr1, arr2):
-    
     arr2 = arr2.to_numpy().flatten()
     mask = arr2 <= 1
     
@@ -87,6 +86,7 @@ if __name__ == "__main__":
             
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=33)
 
+    # target transformation
     y_transformed = target_transform.fit_transform(y_train)
 
     param_grid = {
@@ -107,7 +107,8 @@ if __name__ == "__main__":
     bias = np.mean(y_test.to_numpy().flatten() - pred)
     print("bias pre: ", bias)
     compareArrays(pred, y_test)
-    
+
+    # evaluation
     r2 = r2_score(y_test, pred)
     print("R²:", r2)
     
@@ -123,10 +124,12 @@ if __name__ == "__main__":
     df_combined["residuals"] = df_combined["Target values"] - df_combined["Prediction"]
     df_combined.to_csv("Outputs/Target_and_predictions", index=False)
     
-    # Task 2
-    
+    ######### Task 2 Predict win probabilities #########
+    # load data
     x = pd.read_csv("Data-20250331/Task2-superheroes-villains-edited.csv")
     name = x["name"]
+
+    # predict win probabilities
     pred = model.predict(x)
     print("Prediction: ", pred)
     pred_df = pd.DataFrame(pred)
@@ -174,9 +177,12 @@ if __name__ == "__main__":
         explanation.to_csv("Outputs/Task2 feature contribution" + row["name"].values[0], index=False)
     
     
-    # Task3
-    
+    ########## Task3 Villain Analysis #########
+
+    # load data
     x = pd.read_csv("Data-20250331/Task3_villain.csv")
+
+    # prediction
     pred = model.predict(x.drop(" win_prob", axis=1))
     print("Prediction: ", pred)
     pred_df = pd.DataFrame(pred)
@@ -186,6 +192,7 @@ if __name__ == "__main__":
     
     row = x.iloc[[0]]
 
+    # transform data and retreive coefficients and intercept
     X_transformed = preprocessor.transform(row)
     X_transformed = model.named_steps["rfe"].transform(X_transformed)
     coefficients = model.named_steps['ridge'].coef_ 

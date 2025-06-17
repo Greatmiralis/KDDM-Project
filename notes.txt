@@ -1,6 +1,0 @@
-dropping features: eye colour, hair colour, universe ?, secret_code ?
-redundant: Hero
-
-theories: secret_code might be classes. like hero strength S,A,B...
-
-Possible problems: same character is hero and villain possibly

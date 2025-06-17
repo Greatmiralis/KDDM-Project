@@ -24,24 +24,30 @@ class CorrelationFilter(BaseEstimator, TransformerMixin):
             corr_matrix = X.corr().abs()
             
 class OutlierRemoval(BaseEstimator, TransformerMixin):  # IQR based, removes outlier by clipping them
-    def __init__(self, multiplier=1.5):
-        super().__init__(multiplier, lower_bound = {}, upper_bound = {})
+    def __init__(self, multiplier=1.5, numerical_features=None):
+        self.multiplier = multiplier
+        self.numerical_features = numerical_features
+        self.lower_bound = {}
+        self.upper_bound = {}
         
     def fit(self, X, y=None):
         df = pd.DataFrame(X)
-        for col in numerical_features:
+        features = self.numerical_features or df.select_dtypes(include=['number']).columns
+        
+        for col in features:
             Q1 = df[col].quantile(0.25)
             Q3 = df[col].quantile(0.75)
             IQR = Q3 - Q1
             self.lower_bound[col] = Q1 - self.multiplier * IQR
-            self.lower_bound[col] = Q3 + self.multiplier * IQR
+            self.upper_bound[col] = Q3 + self.multiplier * IQR
             
         return self
     
     def transform(self, X):
         df = pd.DataFrame(X).copy()
-        
-        for col in numerical_features:
+        features = self.numerical_features or df.select_dtypes(include=['number']).columns
+
+        for col in features:
             df[col] = df[col].clip(lower=self.lower_bound[col], upper=self.upper_bound[col])
         
         return df
@@ -66,7 +72,7 @@ def clean_role(X):
         df[col] = df[col].apply(clean_role_feature)
     return df
 
-numerical_features = ["power_level", "weight", "height", "age", "speed", "battle_iq", "ranking", "intelligence", "training_time"]
+numerical_features = ["power_level", "weight", "height", "age", "speed", "battle_iq", "ranking", "training_time"]
 categorical_features = ["skin_type", "eye_color", "gender", "hair_color", "universe", "body_type" ,"job", "species", "abilities", "special_attack", "secret_code"]
 role_feature = ["role"]
 name_feature = ["name"]
@@ -74,20 +80,18 @@ target_feature = ["win_prob"]
 
 target_transform = Pipeline(steps=[     # minimum change in medians and quartals +-=0.01
     ("outlier removal", FunctionTransformer(win_probOutlierRemoval)), # clips the win prob to 0 and 1 some are over 1 maybe a different approach is better
-    ("imputer", SimpleImputer())
+    ("imputer", SimpleImputer(strategy="mean"))
     ]
 )
 
 numeric_transform = Pipeline(steps=[
-    ("imputer", SimpleImputer(strategy="mean")),
-    #("outlier removal", OutlierRemoval()) needs to be checked if too transforming
+    ("outlier removal", OutlierRemoval(multiplier=1.5)),
     ("scalar", RobustScaler()),
     ("poly", PolynomialFeatures(degree=2, include_bias=False))
     ]
 )
 
 categorical_transform = Pipeline(steps=[
-    ("imputer", SimpleImputer(strategy="most_frequent")),
     ("encoder", OneHotEncoder(handle_unknown="error", sparse_output=False))
     ]
 )
